@@ -155,4 +155,4 @@ The training script will:
 
 ## Author
 
-Purdue University - ECE 49595CV Fall 2025
+Mohamed Mahmoud Zaitoun for Purdue University - ECE 49595CV Fall 2025
