@@ -32,6 +32,82 @@ The improved SimpleCNN model features:
 - **3 Fully Connected Layers**: 2304→1024→256→4 with BatchNorm
 - **Progressive Dropout**: 0.5→0.3→0.2 for better generalization
 
+### Architecture Diagram
+
+```
+Input Image (64x64x3)
+        │
+        ▼
+┌─────────────────┐
+│  Conv1 (5x5)    │  3 → 64 channels
+│  BatchNorm2d    │
+│  ReLU           │
+│  MaxPool (2x2)  │  64x64 → 32x32
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐
+│  Conv2 (3x3)    │  64 → 192 channels  
+│  BatchNorm2d    │
+│  ReLU           │
+│  MaxPool (2x2)  │  32x32 → 16x16
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐
+│  Conv3 (3x3)    │  192 → 384 channels
+│  BatchNorm2d    │
+│  ReLU           │
+│  MaxPool (2x2)  │  16x16 → 8x8
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐    ┌──────────────┐
+│  Conv4 (3x3)    │    │ Skip Conv    │ ← ResNet Skip Connection
+│  BatchNorm2d    │◄───│ (1x1) 384→256│
+│  ReLU           │    └──────────────┘
+│  MaxPool (2x2)  │  8x8 → 4x4, 384 → 256 channels
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐    ┌──────────────┐
+│  Conv5 (3x3)    │    │   Identity   │ ← ResNet Skip Connection  
+│  BatchNorm2d    │◄───│  (same dim)  │
+│  ReLU           │    └──────────────┘
+│  MaxPool (2x2)  │  4x4 → 2x2, 256 channels
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐
+│   Flatten       │  2x2x256 = 1024 → Linear input
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐
+│ FC1: 2304→1024  │  BatchNorm1d + ReLU + Dropout(0.5)
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐
+│ FC2: 1024→256   │  BatchNorm1d + ReLU + Dropout(0.3)
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐
+│ FC3: 256→4      │  Dropout(0.2) → Final Classification
+└─────────────────┘
+        │
+        ▼
+   Output (4 classes)
+   [cat, banana, elephant, bike]
+```
+
+**Key Features:**
+- **Skip Connections**: ResNet-style shortcuts in Conv4 & Conv5 for better gradient flow
+- **Batch Normalization**: After every Conv/FC layer for stable training  
+- **Progressive Dropout**: 0.5 → 0.3 → 0.2 to prevent overfitting
+- **AlexNet Foundation**: 5 conv layers with increasing channel depth
+
 ## Requirements
 
 - Python 3.7+
