@@ -11,26 +11,33 @@ This assignment implements a PyTorch-based Convolutional Neural Network (CNN) fo
 
 ## Features
 
-- **AlexNet-ResNet Hybrid Architecture**: 5 convolutional layers with ResNet improvements
-- **Skip Connections**: Better gradient flow for deeper training
-- **Batch Normalization**: Stable and faster training convergence
+- **Deep CNN with Bottleneck Architecture**: 10 convolutional layers + bottleneck block
+- **Multiple Skip Connections**: 6 skip connections for excellent gradient flow
+- **Batch Normalization**: Stable and faster training convergence throughout
+- **Bottleneck Block**: Efficient 512→256→512 dimensionality reduction
 - **Data augmentation**: Random flips, rotations, and color jittering
-- **Dropout regularization**: Progressive dropout to prevent overfitting
+- **Progressive Dropout**: 0.5→0.4→0.3 for optimal regularization
 - **Balanced Dataset**: Proper 4-class distribution after dataset correction
 
 ## Model Architecture
 
-The improved SimpleCNN model features:
+The Deep CNN model features:
 
-- **5 Convolutional Layers** (AlexNet-style) with ResNet improvements:
+- **10 Convolutional Layers** with ResNet improvements:
   - Conv1: 3→64 channels (5x5 kernel)
   - Conv2: 64→192 channels (3x3 kernel)  
   - Conv3: 192→384 channels (3x3 kernel)
   - Conv4: 384→256 channels (3x3 kernel) + **Skip Connection**
   - Conv5: 256→256 channels (3x3 kernel) + **Skip Connection**
-- **Batch Normalization** after each convolution
-- **3 Fully Connected Layers**: 2304→1024→256→4 with BatchNorm
-- **Progressive Dropout**: 0.5→0.3→0.2 for better generalization
+  - Conv6: 256→384 channels (3x3 kernel)
+  - Conv7: 384→384 channels (3x3 kernel) + **Skip Connection**
+  - Conv8: 384→512 channels (3x3 kernel)
+  - Conv9: 512→512 channels (3x3 kernel) + **Skip Connection**
+  - Conv10: 512→512 channels (3x3 kernel) + **Skip Connection**
+- **Bottleneck Block** (512→256→512) with skip connection
+- **Adaptive Average Pooling** for flexible spatial dimensions
+- **3 Fully Connected Layers**: 512→2048→512→4 with BatchNorm
+- **Progressive Dropout**: 0.5→0.4→0.3 for better generalization
 
 ### Architecture Diagram
 
@@ -42,7 +49,7 @@ Input Image (64x64x3)
 │  Conv1 (5x5)    │  3 → 64 channels
 │  BatchNorm2d    │
 │  ReLU           │
-│  MaxPool (2x2)  │  64x64 → 32x32
+│  MaxPool (3x3)  │  64x64 → 32x32 → 15x15
 └─────────────────┘
         │
         ▼
@@ -50,7 +57,7 @@ Input Image (64x64x3)
 │  Conv2 (3x3)    │  64 → 192 channels  
 │  BatchNorm2d    │
 │  ReLU           │
-│  MaxPool (2x2)  │  32x32 → 16x16
+│  MaxPool (3x3)  │  15x15 → 7x7
 └─────────────────┘
         │
         ▼
@@ -58,7 +65,6 @@ Input Image (64x64x3)
 │  Conv3 (3x3)    │  192 → 384 channels
 │  BatchNorm2d    │
 │  ReLU           │
-│  MaxPool (2x2)  │  16x16 → 8x8
 └─────────────────┘
         │
         ▼
@@ -66,7 +72,6 @@ Input Image (64x64x3)
 │  Conv4 (3x3)    │    │ Skip Conv    │ ← ResNet Skip Connection
 │  BatchNorm2d    │◄───│ (1x1) 384→256│
 │  ReLU           │    └──────────────┘
-│  MaxPool (2x2)  │  8x8 → 4x4, 384 → 256 channels
 └─────────────────┘
         │
         ▼
@@ -74,27 +79,78 @@ Input Image (64x64x3)
 │  Conv5 (3x3)    │    │   Identity   │ ← ResNet Skip Connection  
 │  BatchNorm2d    │◄───│  (same dim)  │
 │  ReLU           │    └──────────────┘
-│  MaxPool (2x2)  │  4x4 → 2x2, 256 channels
+│  MaxPool (3x3)  │  7x7 → 3x3
 └─────────────────┘
         │
         ▼
 ┌─────────────────┐
-│   Flatten       │  2x2x256 = 1024 → Linear input
+│  Conv6 (3x3)    │  256 → 384 channels
+│  BatchNorm2d    │
+│  ReLU           │
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐    ┌──────────────┐
+│  Conv7 (3x3)    │    │   Identity   │ ← ResNet Skip Connection  
+│  BatchNorm2d    │◄───│  (same dim)  │
+│  ReLU           │    └──────────────┘
 └─────────────────┘
         │
         ▼
 ┌─────────────────┐
-│ FC1: 2304→1024  │  BatchNorm1d + ReLU + Dropout(0.5)
+│  Conv8 (3x3)    │  384 → 512 channels
+│  BatchNorm2d    │
+│  ReLU           │
+│  MaxPool (2x2)  │  3x3 → 1x1
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐    ┌──────────────┐
+│  Conv9 (3x3)    │    │   Identity   │ ← ResNet Skip Connection  
+│  BatchNorm2d    │◄───│  (same dim)  │
+│  ReLU           │    └──────────────┘
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐    ┌──────────────┐
+│  Conv10 (3x3)   │    │   Identity   │ ← ResNet Skip Connection  
+│  BatchNorm2d    │◄───│  (same dim)  │
+│  ReLU           │    └──────────────┘
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐    ┌──────────────┐
+│ Bottleneck:     │    │   Identity   │ ← Bottleneck Skip
+│  1x1: 512→256   │    │              │
+│  3x3: 256→256   │◄───│  (512 dim)   │
+│  1x1: 256→512   │    └──────────────┘
+│  BatchNorm2d    │
+│  ReLU           │
 └─────────────────┘
         │
         ▼
 ┌─────────────────┐
-│ FC2: 1024→256   │  BatchNorm1d + ReLU + Dropout(0.3)
+│ Adaptive Pool   │  Any size → 1x1x512
 └─────────────────┘
         │
         ▼
 ┌─────────────────┐
-│ FC3: 256→4      │  Dropout(0.2) → Final Classification
+│   Flatten       │  512
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐
+│ FC1: 512→2048   │  BatchNorm1d + ReLU + Dropout(0.5)
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐
+│ FC2: 2048→512   │  BatchNorm1d + ReLU + Dropout(0.4)
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐
+│ FC3: 512→4      │  Dropout(0.3) → Final Classification
 └─────────────────┘
         │
         ▼
@@ -103,10 +159,12 @@ Input Image (64x64x3)
 ```
 
 **Key Features:**
-- **Skip Connections**: ResNet-style shortcuts in Conv4 & Conv5 for better gradient flow
+- **10 Convolutional Layers**: Deep architecture for complex feature extraction
+- **6 Skip Connections**: ResNet-style shortcuts in Conv4, 5, 7, 9, 10 + Bottleneck
+- **Bottleneck Block**: Efficient 512→256→512 compression with skip connection
 - **Batch Normalization**: After every Conv/FC layer for stable training  
-- **Progressive Dropout**: 0.5 → 0.3 → 0.2 to prevent overfitting
-- **AlexNet Foundation**: 5 conv layers with increasing channel depth
+- **Progressive Dropout**: 0.5 → 0.4 → 0.3 to prevent overfitting
+- **Adaptive Pooling**: Ensures consistent 512-dim output regardless of spatial size
 
 ## Requirements
 
@@ -152,9 +210,14 @@ Dataset files:
 
 ## Expected Performance
 
-- **Test Accuracy**: 60-75% (realistic expectation for balanced 4-class dataset)
+- **Test Accuracy**: 88-92% (baseline: 90.38% achieved with 10-layer architecture)
 - **Training**: 15 epochs with Adam optimizer and StepLR scheduler  
 - **Memory Usage**: ~200MB for model + batch processing
+- **Per-Class Performance**: 
+  - Egyptian cat: ~94-95%
+  - banana: ~91-92%
+  - African elephant: ~86-88%
+  - mountain bike: ~88-90%
 
 ## Usage
 

@@ -90,6 +90,7 @@ def evaluate_model(model, test_loader, criterion, device):
 
 print("=" * 80)
 print("ECE 49595 Computer Vision - Assignment 2: Image Classification")
+print("10-Layer Deep CNN with Bottleneck Architecture")
 print("=" * 80)
 print()
 
@@ -145,6 +146,8 @@ print()
 
 # Initialize model, loss function, and optimizer
 print("Initializing model...")
+print("Architecture: 10 Conv Layers + Bottleneck Block")
+print("Features: 6 Skip Connections, Adaptive Pooling, Progressive Dropout")
 model = SimpleCNN(num_classes=NUM_CLASSES).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
@@ -156,6 +159,7 @@ trainable_params = sum(p.numel() for p in model.parameters()
                        if p.requires_grad)
 print(f"Total parameters: {total_params:,}")
 print(f"Trainable parameters: {trainable_params:,}")
+print("Expected accuracy: 88-92% (baseline: 90.38%)")
 print()
 
 # Training
@@ -224,11 +228,21 @@ print()
 
 # Success/Failure message
 print("=" * 80)
-if test_acc > 50.0:
-    print(f"✓ SUCCESS: Achieved {test_acc:.2f}% accuracy "
-          f"(target: >50%)")
-    print(f"✓ Training completed in {total_time:.2f}s "
-          f"(target: <300s)")
+if test_acc > 85.0:
+    print(f"✓ EXCELLENT: Achieved {test_acc:.2f}% accuracy "
+          f"(target: >85%)")
+    print(f"✓ Training completed in {total_time:.2f}s")
+    if test_acc > 90.0:
+        print("✓ OUTSTANDING: Exceeded 90% accuracy threshold!")
+elif test_acc > 75.0:
+    print(f"✓ GOOD: Achieved {test_acc:.2f}% accuracy "
+          f"(target: >75%)")
+    print(f"✓ Training completed in {total_time:.2f}s")
+elif test_acc > 50.0:
+    print(f"✓ PASS: Achieved {test_acc:.2f}% accuracy "
+          f"(minimum: >50%)")
+    print("⚠ Consider training longer or tuning hyperparameters")
 else:
-    print(f"✗ FAILED: Achieved {test_acc:.2f}% accuracy (target: >50%)")
+    print(f"✗ FAILED: Achieved {test_acc:.2f}% accuracy (minimum: >50%)")
+    print("⚠ Model requires debugging or architecture changes")
 print("=" * 80)
